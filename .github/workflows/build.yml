@@ -11,8 +11,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Dézipper le projet
-        run: unzip -q NexusGames-github.zip
+      - name: Décompresser le projet (zip 0.4)
+        run: |
+          ZIP=$(ls -t *0.4*.zip 2>/dev/null | head -n1)
+          if [ -z "$ZIP" ]; then
+            echo "Aucun zip contenant 0.4 trouvé à la racine :"
+            ls
+            exit 1
+          fi
+          echo "Zip utilisé : $ZIP"
+          unzip -q "$ZIP" -d src_unzip
+          ROOT=$(dirname "$(find src_unzip -name settings.gradle.kts | head -n1)")
+          mkdir -p build_src
+          cp -r "$ROOT"/. build_src/
 
       - uses: actions/setup-java@v4
         with:
@@ -24,10 +35,13 @@ jobs:
           gradle-version: 8.9
 
       - name: Build debug APK
-        working-directory: NexusGames
+        working-directory: build_src
         run: gradle assembleDebug --no-daemon
+
+      - name: Renommer l'APK en gaming-soul.apk
+        run: cp build_src/app/build/outputs/apk/debug/*.apk gaming-soul.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: NexusGames-apk
-          path: NexusGames/app/build/outputs/apk/debug/*.apk
+          name: gaming-soul
+          path: gaming-soul.apk
